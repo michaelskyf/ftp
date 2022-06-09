@@ -12,8 +12,9 @@
 
 #include "worker.h"
 
-#define DEFAULT_WELCOME_MSG		"220 Hello, Master UwU\n"
-static char *welcome_msg = DEFAULT_WELCOME_MSG;
+#define DEFAULT_WELCOME_MSG	"220 Good morning sir. Please kindly do the needful\n"
+
+static const char *welcome_msg = DEFAULT_WELCOME_MSG;
 
 static int sockfd;
 static struct sockaddr_in srv_addr;
@@ -51,7 +52,7 @@ static int create_socket(const char *address, int port)
 
 	if(listen(sockfd, 5) == -1)
 	{
-		perror("Failed to listen on bound address");
+		perror("Failed to listen on bound socket");
 		close(sockfd);
 		return -1;
 	}
@@ -115,8 +116,20 @@ static void sigchld_handler(int signum)
 		perror("wait failed");
 		exit(EXIT_FAILURE);
 	}
+	else if(WIFEXITED(status))
+	{
+		printf("Worker with PID %d exited with exit code %d\n", pid, WEXITSTATUS(status));
+	}
+	else if(WIFSIGNALED(status))
+	{
+		fprintf(stderr, "Worker with PID %d killed with signal %d: %s\n",
+				pid, WTERMSIG(status), strsignal(WTERMSIG(status)));
+	}
+	else
+	{
+		fprintf(stderr, "Unexpected status with worker %d\n", pid);
+	}
 
-	printf("Worker with PID %d exited with exit code %d\n", pid, WEXITSTATUS(status));
 }
 
 

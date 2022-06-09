@@ -5,6 +5,7 @@ add_library(
 	${SERVER_NAME}-lib
 	STATIC
 	worker.c
+	command.c
 	)
 
 add_executable(

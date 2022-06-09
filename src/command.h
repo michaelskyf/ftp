@@ -1,23 +1,44 @@
 #pragma once
 
-#include <stdint.h>
-#include <netinet/in.h>
-#include "msg.h"
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
-typedef void(*command_func_t)(int, struct msg_header *);
-
-enum commands
+struct conn_info
 {
-	/* Ignored, always ACKed */
-	COMMAND_NONE = 0,
-	COMMAND_LIST_DIRS = 1,
+	int cmd_conn_fd;
+	int data_fd;
 
-	COMMAND_ACK = 128,
-	COMMAND_NAK = 129,
+	int logged_in;
+
+	char username[64];
+	char password[64];
 };
 
-__attribute__((warn_unused_result))
-command_func_t command_get_function(uint8_t opcode);
+typedef int (cmd_func_t)(struct conn_info *conn, const char *arg, size_t arg_len);
 
-void command_none(int connfd, const struct msg_header * msg);
-void command_list_dirs(int connfd, const struct msg_header * msg);
+struct cmd_entry
+{
+	const char *cmd_str;
+	cmd_func_t *cmd_func;
+};
+
+
+cmd_func_t *cmd_get_cmd(const char *msg, const char **arg, size_t msg_len);
+
+cmd_func_t cmd_ftp_user;
+cmd_func_t cmd_ftp_pass;
+
+cmd_func_t cmd_ftp_syst;
+cmd_func_t cmd_ftp_pasv;
+cmd_func_t cmd_ftp_list;
+
+static const struct cmd_entry commands[] =
+{
+	/* Add space after command if requires arguments */
+	{"USER", cmd_ftp_user},
+	{"PASS", cmd_ftp_pass},
+	{"SYST", cmd_ftp_syst},
+	{"PASV", cmd_ftp_pasv},
+	{"LIST", cmd_ftp_list},
+};
