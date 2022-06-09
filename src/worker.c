@@ -40,10 +40,10 @@ int worker_func(int connfd)
 		/* Connection closed */
 		if(read_bytes == 0)
 		{
-//			break;
+			break;
 		}
 
-		printf("%s", msg_buffer);
+		printf("%s", msg_buffer); // also for testing
 
 		if((cmd = cmd_get_cmd(msg_buffer, &arg, read_bytes)) == NULL)
 		{
