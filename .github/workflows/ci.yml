@@ -1,0 +1,101 @@
+name: CI
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+    defaults:
+      run:
+        shell: bash
+
+jobs:
+  linux:
+    name: Build project for GNU/Linux with ${{matrix.compiler.name}}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler:
+          - {name: GCC, cc: gcc, cxx: g++}
+          - {name: Clang, cc: clang, cxx: clang++}
+
+    steps:
+      - name: Checkout respository
+        uses: actions/checkout@v2
+
+      - name: Update git submodules
+        run: git submodule update --init
+
+      - name: Install dependencies
+        run: sudo apt install libssl-dev libgtest-dev valgrind
+
+      - name: Run CMake
+        run: cmake . -DCMAKE_C_COMPILER=${{matrix.compiler.cc}} -DCMAKE_CXX_COMPILER=${{matrix.compiler.cxx}}
+
+      - name: Build the project
+        run: make
+
+      - name: Run tests
+        id: runTests
+        run: make ExperimentalMemCheck
+
+      - name: Read valgrind logs
+        if: success() || failure()
+        run: cat Testing/Temporary/MemoryChecker.*.log | cat
+
+  macos:
+    name: Build project for MacOS with ${{matrix.compiler.name}}
+    runs-on: macos-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler:
+          - {name: GCC, cc: gcc, cxx: g++}
+          - {name: Clang, cc: clang, cxx: clang++}
+
+    steps:
+      - name: Checkout respository
+        uses: actions/checkout@v2
+
+      - name: Update git submodules
+        run: git submodule update --init
+
+      - name: Install dependencies
+        run: brew install openssl googletest
+
+      - name: Run CMake
+        run: cmake . -DCMAKE_C_COMPILER=${{matrix.compiler.cc}} -DCMAKE_CXX_COMPILER=${{matrix.compiler.cxx}} -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl
+
+      - name: Build the project
+        run: make
+
+      - name: Run tests
+        run: make test
+
+#  windows:
+#    name: Build project for Windows with ${{matrix.compiler}}
+#    runs-on: windows-latest
+#
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        compiler: [gcc, clang]
+#
+#    steps:
+#      - name: Checkout respository
+#        uses: actions/checkout@v2
+#
+#      - name: Update git submodules
+#        run: git submodule update --init
+#
+#      - name: Install dependencies
+#        run: choco install openssl
+#
+#      - name: Run CMake
+#        run: cmake . -G"Unix Makefiles" -DCMAKE_C_COMPILER=${{matrix.compiler}}
+#
+#      - name: Build the project
+#        run: make
