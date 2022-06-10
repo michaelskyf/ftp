@@ -13,6 +13,30 @@
 #define MIN(a, b) \
 	(a > b) ? (b) : (a)
 
+static inline int connect_to_client(const struct conn_info *c)
+{
+	int ret = -1;
+	struct sockaddr_in addr;
+	socklen_t addr_len;
+
+	if(c->mode == CONN_PASV)
+	{
+		if((ret = accept(c->data_fd, (struct sockaddr *)&addr, &addr_len)) == -1)
+		{
+			perror("Failed to accept incoming data connection");
+			close(c->data_fd);
+			return -1;
+		}
+
+	}
+	else if(c->mode == CONN_ACTV)
+	{
+		/* TODO: Active mode */
+	}
+
+	return ret;
+}
+
 cmd_func_t *cmd_get_cmd(const char *msg, const char **arg, size_t msg_len)
 {
 	for(size_t i = 0; i < sizeof(commands)/sizeof(*commands); i++)
@@ -72,6 +96,12 @@ int cmd_ftp_pasv(struct conn_info *c, const char *arg, size_t arg_len)
 	{
 		dprintf(c->cmd_conn_fd, "530 Not logged in\n");
 		return -1;
+	}
+
+	/* TODO?: Check if socket got closed */
+	if(c->mode != CONN_IDLE)
+	{
+		fprintf(stderr, ":(\n");
 	}
 
 	struct sockaddr_in addr;
@@ -139,6 +169,7 @@ int cmd_ftp_pasv(struct conn_info *c, const char *arg, size_t arg_len)
 
 
 	c->data_fd = fd;
+	c->mode = CONN_PASV;
 
 	return 0;
 }
@@ -150,8 +181,6 @@ int cmd_ftp_list(struct conn_info *c, const char *arg, size_t arg_len)
 	(void)arg_len;
 
 	int connfd;
-	struct sockaddr_in addr;
-	socklen_t addr_len;
 
 	if(c->logged_in == 0)
 	{
@@ -159,10 +188,9 @@ int cmd_ftp_list(struct conn_info *c, const char *arg, size_t arg_len)
 		return -1;
 	}
 
-	if((connfd = accept(c->data_fd, (struct sockaddr *)&addr, &addr_len)) == -1)
+	connfd = connect_to_client(c);
+	if(connfd == -1)
 	{
-		perror("Failed to accept incoming data connection");
-		close(c->data_fd);
 		return -1;
 	}
 

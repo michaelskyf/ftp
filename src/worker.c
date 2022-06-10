@@ -48,6 +48,7 @@ int worker_func(int connfd)
 		if((cmd = cmd_get_cmd(msg_buffer, &arg, read_bytes)) == NULL)
 		{
 			dprintf(conn_info.cmd_conn_fd, "500 Unknown command\n");
+			fprintf(stderr, "Unknown command received\n");
 			continue;
 		}
 

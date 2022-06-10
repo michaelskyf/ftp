@@ -12,9 +12,7 @@
 
 #include "worker.h"
 
-#define DEFAULT_WELCOME_MSG	"220 Good morning sir. Please kindly do the needful\n"
-
-static const char *welcome_msg = DEFAULT_WELCOME_MSG;
+static const char *welcome_msg = "220 Good morning sir. Please kindly do the needful\n";
 
 static int sockfd;
 static struct sockaddr_in srv_addr;
@@ -66,6 +64,8 @@ static int serve(void)
 	int connfd;
 	struct sockaddr_in cli_addr;
 	socklen_t cli_len;
+
+	/* TODO: SIGKILL */
 	while(1)
 	{
 		connfd = accept(sockfd, (struct sockaddr *)&cli_addr, &cli_len);

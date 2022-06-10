@@ -4,8 +4,16 @@
 #include <string.h>
 #include <unistd.h>
 
+enum conn_mode
+{
+	CONN_IDLE,
+	CONN_ACTV,
+	CONN_PASV,
+};
+
 struct conn_info
 {
+	enum conn_mode mode;
 	int cmd_conn_fd;
 	int data_fd;
 
