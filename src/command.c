@@ -13,11 +13,11 @@
 #define MIN(a, b) \
 	(a > b) ? (b) : (a)
 
-static inline int connect_to_client(const struct conn_info *c)
+static inline int data_connect(struct conn_info *c)
 {
 	int ret = -1;
 	struct sockaddr_in addr;
-	socklen_t addr_len;
+	socklen_t addr_len = sizeof(addr);
 
 	if(c->mode == CONN_PASV)
 	{
@@ -27,11 +27,39 @@ static inline int connect_to_client(const struct conn_info *c)
 			close(c->data_fd);
 			return -1;
 		}
-
 	}
 	else if(c->mode == CONN_ACTV)
 	{
-		/* TODO: Active mode */
+		fprintf(stderr, "TODO: Active mode in %s\n", __func__);
+	}
+	else
+	{
+		fprintf(stderr, "Invalid mode\n");
+		c->mode = CONN_IDLE;
+	}
+
+	return ret;
+}
+
+static inline int data_close(struct conn_info *c, int connfd)
+{
+	int ret = 0;
+
+	if(c->mode != CONN_IDLE)
+	{
+		if(close(c->data_fd) == -1)
+		{
+			perror("Failed to close data_fd");
+			ret = -1;
+		}
+
+		if(close(connfd) == -1)
+		{
+			perror("Failed to close connfd");
+			ret = -1;
+		}
+
+		c->mode = CONN_IDLE;
 	}
 
 	return ret;
@@ -46,7 +74,7 @@ cmd_func_t *cmd_get_cmd(const char *msg, const char **arg, size_t msg_len)
 		if(!strncmp(c->cmd_str, msg, MIN(strlen(c->cmd_str), msg_len)))
 		{
 			if(arg != NULL)
-				*arg = msg + strlen(c->cmd_str);
+				*arg = msg + strlen(c->cmd_str) + ((msg_len) ? 1 : 0);
 
 			return c->cmd_func;
 		}
@@ -188,7 +216,7 @@ int cmd_ftp_list(struct conn_info *c, const char *arg, size_t arg_len)
 		return -1;
 	}
 
-	connfd = connect_to_client(c);
+	connfd = data_connect(c);
 	if(connfd == -1)
 	{
 		return -1;
@@ -198,8 +226,79 @@ int cmd_ftp_list(struct conn_info *c, const char *arg, size_t arg_len)
 	dprintf(connfd, "It's Working!\r\n");
 	dprintf(c->cmd_conn_fd, "226 Directory send OK\n");
 
-	close(connfd);
-	close(c->data_fd);
+	data_close(c, connfd);
+
+	return 0;
+}
+
+int cmd_ftp_stor(struct conn_info *c, const char *arg, size_t arg_len)
+{
+	/* STOR arg1 arg2(optional) */
+	FILE *fp;
+	int connfd;
+	int argc = 1;
+	char filename[FILENAME_MAX];
+	char buffer[10 * 1024];
+	size_t bytes_read;
+
+	if(c->logged_in == 0)
+	{
+		dprintf(c->cmd_conn_fd, "530 Not logged in\n");
+		return -1;
+	}
+
+	/* Find if second argument exists */
+	for(size_t i = 0; i < arg_len; i++)
+	{
+		if(arg[i] == ' ')
+		{
+			arg_len -= filename - arg;
+			memcpy(filename, &arg[i+1], MIN(arg_len, sizeof(filename) - 1));
+			filename[MIN(arg_len, sizeof(filename) - 1)] = '\0';
+			argc = 2;
+			printf("%s %ld\n", filename, arg_len);
+			break;
+		}
+	}
+
+	if(argc == 1)
+	{
+		memcpy(filename, arg, MIN(arg_len, sizeof(filename) - 1));
+		filename[MIN(arg_len, sizeof(filename) - 1)] = '\0';
+	}
+
+	connfd = data_connect(c);
+	if(connfd == -1)
+	{
+		return -1;
+	}
+
+	fp = fopen(filename, "w");
+	if(fp == NULL)
+	{
+		perror("Failed to open file for writing");
+		data_close(c, connfd);
+		return -1;
+	}
+
+	dprintf(c->cmd_conn_fd, "150 Receiving file\n");
+
+	while((bytes_read = read(connfd, buffer, sizeof(buffer))))
+	{
+		if(fwrite(buffer, 1, bytes_read, fp) != bytes_read)
+		{
+			if(ferror(fp))
+			{
+				fprintf(stderr, "Error writing file\n");
+			}
+		}
+	}
+	fflush(fp);
+	fclose(fp);
+
+	dprintf(c->cmd_conn_fd, "226 File store OK\n");
+
+	data_close(c, connfd);
 
 	return 0;
 }

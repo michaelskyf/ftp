@@ -40,6 +40,7 @@ cmd_func_t cmd_ftp_pass;
 cmd_func_t cmd_ftp_syst;
 cmd_func_t cmd_ftp_pasv;
 cmd_func_t cmd_ftp_list;
+cmd_func_t cmd_ftp_stor;
 
 static const struct cmd_entry commands[] =
 {
@@ -49,4 +50,6 @@ static const struct cmd_entry commands[] =
 	{"SYST", cmd_ftp_syst},
 	{"PASV", cmd_ftp_pasv},
 	{"LIST", cmd_ftp_list},
+	{"STOR", cmd_ftp_stor},
+	{"PUT", cmd_ftp_stor}, /* Behaves the same as STOR */
 };

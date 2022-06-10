@@ -43,6 +43,14 @@ int worker_func(int connfd)
 			break;
 		}
 
+		/* Check if last 2 Bytes are "\r\n" */
+		if(read_bytes < 2 || msg_buffer[read_bytes-1] != '\n' || msg_buffer[read_bytes - 2] != '\r')
+		{
+			fprintf(stderr, "Invalid command string\n");
+			continue;
+		}
+		read_bytes -= 2;
+
 		printf("%s", msg_buffer); // also for testing
 
 		if((cmd = cmd_get_cmd(msg_buffer, &arg, read_bytes)) == NULL)
@@ -52,12 +60,7 @@ int worker_func(int connfd)
 			continue;
 		}
 
-		arg_len = (read_bytes - 1) - (arg - msg_buffer);
-		if(arg_len > 0)
-		{
-			arg++;
-			arg_len--;
-		}
+		arg_len = read_bytes - (arg - msg_buffer);
 
 		if(cmd(&conn_info, arg, arg_len) == -1)
 		{

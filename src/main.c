@@ -63,7 +63,7 @@ static int serve(void)
 	pid_t pid;
 	int connfd;
 	struct sockaddr_in cli_addr;
-	socklen_t cli_len;
+	socklen_t cli_len = sizeof(cli_addr);
 
 	/* TODO: SIGKILL */
 	while(1)
@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
 	signal(SIGCHLD, sigchld_handler);
 
 	int ret;
-	if(create_socket("127.0.0.1", 8080) == -1)
+	if(create_socket("127.0.0.1", 8787) == -1)
 	{
 		return -1;
 	}
