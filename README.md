@@ -14,5 +14,5 @@ Compile and run
 ```
 cmake .
 make
-./bin/ftp-server
+./bin/ftp-server # Hard-coded address and port: 127.0.0.1:8080
 ```
