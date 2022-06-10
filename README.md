@@ -1,4 +1,6 @@
-![CI](https://github.com/michaelskyf/ftp/actions/workflows/ci.yml/badge.svg)
+![GNU/Linux](https://github.com/michaelskyf/ftp/actions/workflows/linux.yml/badge.svg)
+![MacOS](https://github.com/michaelskyf/ftp/actions/workflows/macos.yml/badge.svg)
+<!-- ![Windows](https://github.com/michaelskyf/ftp/actions/workflows/windows.yml/badge.svg) -->
 
 ⚠️ Work in Progress ⚠️<br>
 
