@@ -18,6 +18,7 @@ struct conn_info
 	int data_fd;
 
 	int logged_in;
+	int quit;
 
 	char username[64];
 	char password[64];
@@ -40,7 +41,9 @@ cmd_func_t cmd_ftp_pass;
 cmd_func_t cmd_ftp_syst;
 cmd_func_t cmd_ftp_pasv;
 cmd_func_t cmd_ftp_list;
+cmd_func_t cmd_ftp_type;
 cmd_func_t cmd_ftp_stor;
+cmd_func_t cmd_ftp_quit;
 
 static const struct cmd_entry commands[] =
 {
@@ -50,6 +53,8 @@ static const struct cmd_entry commands[] =
 	{"SYST", cmd_ftp_syst},
 	{"PASV", cmd_ftp_pasv},
 	{"LIST", cmd_ftp_list},
+	{"TYPE", cmd_ftp_type},
 	{"STOR", cmd_ftp_stor},
 	{"PUT", cmd_ftp_stor}, /* Behaves the same as STOR */
+	{"QUIT", cmd_ftp_quit},
 };

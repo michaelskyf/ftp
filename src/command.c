@@ -7,6 +7,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include "command.h"
 
@@ -231,12 +232,27 @@ int cmd_ftp_list(struct conn_info *c, const char *arg, size_t arg_len)
 	return 0;
 }
 
+int cmd_ftp_type(struct conn_info *c, const char *arg, size_t arg_len)
+{
+	(void)arg;
+	(void)arg_len;
+
+	if(c->logged_in == 0)
+	{
+		dprintf(c->cmd_conn_fd, "530 Not logged in\n");
+		return -1;
+	}
+
+	dprintf(c->cmd_conn_fd, "250 OK\n");
+
+	return 0;
+}
+
 int cmd_ftp_stor(struct conn_info *c, const char *arg, size_t arg_len)
 {
 	/* STOR arg1 arg2(optional) */
 	FILE *fp;
 	int connfd;
-	int argc = 1;
 	char filename[FILENAME_MAX];
 	char buffer[10 * 1024];
 	size_t bytes_read;
@@ -247,25 +263,8 @@ int cmd_ftp_stor(struct conn_info *c, const char *arg, size_t arg_len)
 		return -1;
 	}
 
-	/* Find if second argument exists */
-	for(size_t i = 0; i < arg_len; i++)
-	{
-		if(arg[i] == ' ')
-		{
-			arg_len -= filename - arg;
-			memcpy(filename, &arg[i+1], MIN(arg_len, sizeof(filename) - 1));
-			filename[MIN(arg_len, sizeof(filename) - 1)] = '\0';
-			argc = 2;
-			printf("%s %ld\n", filename, arg_len);
-			break;
-		}
-	}
-
-	if(argc == 1)
-	{
-		memcpy(filename, arg, MIN(arg_len, sizeof(filename) - 1));
-		filename[MIN(arg_len, sizeof(filename) - 1)] = '\0';
-	}
+	memcpy(filename, arg, MIN(arg_len, sizeof(filename) - 1));
+	filename[MIN(arg_len, sizeof(filename) - 1)] = '\0';
 
 	connfd = data_connect(c);
 	if(connfd == -1)
@@ -277,6 +276,7 @@ int cmd_ftp_stor(struct conn_info *c, const char *arg, size_t arg_len)
 	if(fp == NULL)
 	{
 		perror("Failed to open file for writing");
+		dprintf(c->cmd_conn_fd, "451 %s\n", strerror(errno));
 		data_close(c, connfd);
 		return -1;
 	}
@@ -299,6 +299,18 @@ int cmd_ftp_stor(struct conn_info *c, const char *arg, size_t arg_len)
 	dprintf(c->cmd_conn_fd, "226 File store OK\n");
 
 	data_close(c, connfd);
+
+	return 0;
+}
+
+int cmd_ftp_quit(struct conn_info *c, const char *arg, size_t arg_len)
+{
+	(void)arg;
+	(void)arg_len;
+
+	c->quit = 1;
+
+	dprintf(c->cmd_conn_fd, "226 bye\n");
 
 	return 0;
 }

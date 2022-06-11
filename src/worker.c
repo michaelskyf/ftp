@@ -9,6 +9,7 @@
 #include "command.h"
 
 #define WORKER_EXIT(exit_code) \
+	dprintf(conn_info.cmd_conn_fd, "221 Closing control connection"); \
 	close(connfd); \
 	return exit_code
 
@@ -27,7 +28,7 @@ int worker_func(int connfd)
 	conn_info.cmd_conn_fd = connfd;
 	conn_info.data_fd = -1;
 
-	while(1)
+	while(conn_info.quit == 0)
 	{
 		memset(msg_buffer, 0, sizeof(msg_buffer)); // For testing
 		read_bytes = read(conn_info.cmd_conn_fd, msg_buffer, sizeof(msg_buffer));
@@ -46,6 +47,7 @@ int worker_func(int connfd)
 		/* Check if last 2 Bytes are "\r\n" */
 		if(read_bytes < 2 || msg_buffer[read_bytes-1] != '\n' || msg_buffer[read_bytes - 2] != '\r')
 		{
+			dprintf(conn_info.cmd_conn_fd, "500 Inavlid command");
 			fprintf(stderr, "Invalid command string\n");
 			continue;
 		}
