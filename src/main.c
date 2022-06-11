@@ -21,10 +21,10 @@ static size_t children = 0;
 
 static int create_socket(const char *address, int port)
 {
-	in_addr_t bin_addr;
-	if(inet_pton(AF_INET, (address) ? (address): (INADDR_ANY), &bin_addr) == -1)
+	in_addr_t bin_addr = INADDR_ANY;
+	if(address && inet_pton(AF_INET, address, &bin_addr) == -1)
 	{
-		perror("Failed to convert address to binarry form");
+		perror("Failed to convert address to binary form");
 		return -1;
 	}
 
@@ -58,28 +58,26 @@ static int create_socket(const char *address, int port)
 	return 0;
 }
 
-static int serve(void)
+static void serve(void)
 {
 	pid_t pid;
 	int connfd;
 	struct sockaddr_in cli_addr;
 	socklen_t cli_len = sizeof(cli_addr);
 
-	/* TODO: SIGKILL */
+	/* Will exit on signal */
 	while(1)
 	{
 		connfd = accept(sockfd, (struct sockaddr *)&cli_addr, &cli_len);
 		if(connfd == -1)
 		{
 			perror("Failed to accept incoming connection");
-			return -1;
 		}
 
 		pid = fork();
 		if(pid == -1)
 		{
 			perror("Failed to create child process");
-			return -1;
 		}
 
 		if(pid == 0)
@@ -98,8 +96,15 @@ static int serve(void)
 			children++;
 		}
 	}
+}
 
-	return 0;
+static void server_exit(int signum)
+{
+	(void)signum;
+
+	close(sockfd);
+
+	exit(0);
 }
 
 static void sigchld_handler(int signum)
@@ -140,20 +145,15 @@ int main(int argc, char *argv[])
 
 	/* Setup signal handlers */
 	signal(SIGCHLD, sigchld_handler);
+	signal(SIGTERM, server_exit);
+	signal(SIGINT, server_exit);
 
-	int ret;
 	if(create_socket("127.0.0.1", 8787) == -1)
 	{
 		return -1;
 	}
 
-	ret = serve();
-	if(ret)
-	{
-		fprintf(stderr, "Fatal error while serving. Exiting\n");
-	}
+	serve();
 
-	close(sockfd);
-
-	return ret;
+	return 0;
 }

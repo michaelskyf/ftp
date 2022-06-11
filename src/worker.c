@@ -47,7 +47,7 @@ int worker_func(int connfd)
 		/* Check if last 2 Bytes are "\r\n" */
 		if(read_bytes < 2 || msg_buffer[read_bytes-1] != '\n' || msg_buffer[read_bytes - 2] != '\r')
 		{
-			dprintf(conn_info.cmd_conn_fd, "500 Inavlid command");
+			dprintf(conn_info.cmd_conn_fd, "500 Invalid command");
 			fprintf(stderr, "Invalid command string\n");
 			continue;
 		}
