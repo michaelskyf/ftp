@@ -8,6 +8,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <errno.h>
+#include <dirent.h>
+#include <sys/stat.h>
 
 #include "command.h"
 
@@ -64,6 +66,20 @@ static inline int data_close(struct conn_info *c, int connfd)
 	}
 
 	return ret;
+}
+
+static const char *mode_to_str(int mode)
+{
+	const char perms[] = "drwxrwxrwx";
+	static char buff[sizeof(perms)];
+	buff[sizeof(buff) - 1] = '\0';
+	buff[0] = S_ISDIR(mode) ? perms[0] : '-';
+	for(int i = 1; i < 10; i++)
+	{
+		buff[i] = (mode & (1 << (9-i)) ? perms[i] : '-');
+	}
+
+	return buff;
 }
 
 cmd_func_t *cmd_get_cmd(const char *msg, const char **arg, size_t msg_len)
@@ -210,6 +226,9 @@ int cmd_ftp_list(struct conn_info *c, const char *arg, size_t arg_len)
 	(void)arg_len;
 
 	int connfd;
+	DIR *dp;
+	struct dirent *dir;
+	struct stat sb;
 
 	if(c->logged_in == 0)
 	{
@@ -223,8 +242,33 @@ int cmd_ftp_list(struct conn_info *c, const char *arg, size_t arg_len)
 		return -1;
 	}
 
+	dp = opendir(".");
+	if(dp == NULL)
+	{
+		dprintf(c->cmd_conn_fd, "451 %s\n", strerror(errno));
+		data_close(c, connfd);
+		return -1;
+	}
+
+
 	dprintf(c->cmd_conn_fd, "150 Sending directory listing\n");
-	dprintf(connfd, "It's Working!\r\n");
+
+	while((dir = readdir(dp)))
+	{
+		if(stat(dir->d_name, &sb) == -1)
+		{
+			dprintf(c->cmd_conn_fd, "451 %s\n", strerror(errno));
+			data_close(c, connfd);
+			return -1;
+		}
+
+		/* -rwxrwxrwx 1 user group 0 Feb 9 09:38 file.txt */
+		dprintf(connfd, "	%s %5ld %5u %5u %10ld %s\r\n",
+				mode_to_str(sb.st_mode), sb.st_nlink,
+				sb.st_uid, sb.st_gid, sb.st_size, dir->d_name
+				);
+	}
+
 	dprintf(c->cmd_conn_fd, "226 Directory send OK\n");
 
 	data_close(c, connfd);

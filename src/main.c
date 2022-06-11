@@ -21,6 +21,9 @@ static size_t children = 0;
 
 static int create_socket(const char *address, int port)
 {
+	const int       optVal = 1;
+	const socklen_t optLen = sizeof(optVal);
+
 	in_addr_t bin_addr = INADDR_ANY;
 	if(address && inet_pton(AF_INET, address, &bin_addr) == -1)
 	{
@@ -53,6 +56,11 @@ static int create_socket(const char *address, int port)
 		perror("Failed to listen on bound socket");
 		close(sockfd);
 		return -1;
+	}
+
+	if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optVal, optLen) == -1)
+	{
+		printf("OOps :(\n");
 	}
 
 	return 0;
@@ -98,15 +106,6 @@ static void serve(void)
 	}
 }
 
-static void server_exit(int signum)
-{
-	(void)signum;
-
-	close(sockfd);
-
-	exit(0);
-}
-
 static void sigchld_handler(int signum)
 {
 	(void)signum;
@@ -145,8 +144,6 @@ int main(int argc, char *argv[])
 
 	/* Setup signal handlers */
 	signal(SIGCHLD, sigchld_handler);
-	signal(SIGTERM, server_exit);
-	signal(SIGINT, server_exit);
 
 	if(create_socket("127.0.0.1", 8787) == -1)
 	{
