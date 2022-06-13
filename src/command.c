@@ -263,10 +263,19 @@ int cmd_ftp_list(struct conn_info *c, const char *arg, size_t arg_len)
 		}
 
 		/* -rwxrwxrwx 1 user group 0 Feb 9 09:38 file.txt */
-		dprintf(connfd, "	%s %5ld %5u %5u %10ld %s\r\n",
-				mode_to_str(sb.st_mode), sb.st_nlink,
-				sb.st_uid, sb.st_gid, sb.st_size, dir->d_name
-				);
+		dprintf(connfd, "	%s %4lu %5u %5u %10lu %s\r\n",
+				mode_to_str(sb.st_mode),
+#ifdef __APPLE__
+				(unsigned long)
+#endif
+				sb.st_nlink,
+				sb.st_uid, sb.st_gid,
+#ifdef __APPLE__
+				(unsigned long)
+#endif
+				sb.st_size,
+				dir->d_name
+		       );
 	}
 
 	dprintf(c->cmd_conn_fd, "226 Directory send OK\n");
