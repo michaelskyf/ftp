@@ -9,6 +9,7 @@
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <arpa/inet.h>
+#include <getopt.h>
 
 #include "worker.h"
 
@@ -19,13 +20,20 @@ static struct sockaddr_in srv_addr;
 
 static size_t children = 0;
 
-static int create_socket(const char *address, int port)
+static struct args
+{
+	const char *address; /* If NULL accept any address */
+	unsigned int port;
+}
+args;
+
+static int create_socket(void)
 {
 	const int       optVal = 1;
 	const socklen_t optLen = sizeof(optVal);
 
 	in_addr_t bin_addr = INADDR_ANY;
-	if(address && inet_pton(AF_INET, address, &bin_addr) == -1)
+	if(args.address && inet_pton(AF_INET, args.address, &bin_addr) == -1)
 	{
 		perror("Failed to convert address to binary form");
 		return -1;
@@ -42,7 +50,7 @@ static int create_socket(const char *address, int port)
 
 	srv_addr.sin_family = AF_INET;
 	srv_addr.sin_addr.s_addr = bin_addr;
-	srv_addr.sin_port = htons(port);
+	srv_addr.sin_port = htons(args.port);
 
 	if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optVal, optLen) == -1)
 	{
@@ -137,16 +145,70 @@ static void sigchld_handler(int signum)
 
 }
 
+static void print_help(void)
+{
+	printf(
+		"Changeme\n"
+		);
+}
+
+static void args_parse(int argc, char *argv[])
+{
+	int option;
+	int option_index = 0;
+	int should_parse = 1;
+
+	struct option long_options[] =
+	{
+		{"help", no_argument, 0, 'h'},
+		{"address", required_argument, 0, 'a'},
+		{"p", required_argument, 0, 'p'},
+		{0, 0, 0, 0},
+	};
+
+	while(should_parse)
+	{
+		option = getopt_long(argc, argv, "ha:p:", long_options, &option_index);
+
+		switch (option)
+		{
+			case 0:
+				break;
+
+			case 'h':
+				print_help();
+				exit(EXIT_SUCCESS);
+
+			case 'a':
+				args.address = optarg;
+				break;
+
+			case 'p':
+				args.port = atoi(optarg);
+				break;
+
+			case '?':
+				printf("Try '%s --help' for more information\n", argv[0]);
+				exit(EXIT_FAILURE);
+
+			default:
+				should_parse = 0;
+		}
+	}
+}
 
 int main(int argc, char *argv[])
 {
-	(void)argc;
-	(void)argv;
+	/* Default arguments */
+	args.address = NULL;
+	args.port = 8787;
+
+	args_parse(argc, argv);
 
 	/* Setup signal handlers */
 	signal(SIGCHLD, sigchld_handler);
 
-	if(create_socket("127.0.0.1", 8787) == -1)
+	if(create_socket() == -1)
 	{
 		return -1;
 	}

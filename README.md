@@ -1,6 +1,5 @@
 ![GNU/Linux](https://github.com/michaelskyf/ftp/actions/workflows/linux.yml/badge.svg)
 ![MacOS](https://github.com/michaelskyf/ftp/actions/workflows/macos.yml/badge.svg)
-<!-- ![Windows](https://github.com/michaelskyf/ftp/actions/workflows/windows.yml/badge.svg) -->
 
 ⚠️ Work in Progress ⚠️<br>
 
@@ -14,5 +13,5 @@ Compile and run
 ```
 cmake .
 make
-./bin/ftp-server # Hard-coded address and port: 127.0.0.1:8787
+./bin/ftp-server -a <ipv4 address or hostname> -p <port number>
 ```
