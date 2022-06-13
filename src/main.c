@@ -44,6 +44,11 @@ static int create_socket(const char *address, int port)
 	srv_addr.sin_addr.s_addr = bin_addr;
 	srv_addr.sin_port = htons(port);
 
+	if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optVal, optLen) == -1)
+	{
+		perror("Failed to set socket option");
+	}
+
 	if(bind(sockfd, (struct sockaddr *)&srv_addr, sizeof(srv_addr)) == -1)
 	{
 		perror("Failed to bind socket");
@@ -58,10 +63,6 @@ static int create_socket(const char *address, int port)
 		return -1;
 	}
 
-	if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optVal, optLen) == -1)
-	{
-		printf("OOps :(\n");
-	}
 
 	return 0;
 }

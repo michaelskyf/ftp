@@ -347,6 +347,63 @@ int cmd_ftp_stor(struct conn_info *c, const char *arg, size_t arg_len)
 	return 0;
 }
 
+int cmd_ftp_retr(struct conn_info *c, const char *arg, size_t arg_len)
+{
+	/* STOR arg1 arg2(optional) */
+	FILE *fp;
+	int connfd;
+	char filename[FILENAME_MAX];
+	char buffer[10 * 1024];
+	size_t read_bytes;
+
+	if(c->logged_in == 0)
+	{
+		dprintf(c->cmd_conn_fd, "530 Not logged in\n");
+		return -1;
+	}
+
+	memcpy(filename, arg, MIN(arg_len, sizeof(filename) - 1));
+	filename[MIN(arg_len, sizeof(filename) - 1)] = '\0';
+
+	connfd = data_connect(c);
+	if(connfd == -1)
+	{
+		return -1;
+	}
+
+	fp = fopen(filename, "r");
+	if(fp == NULL)
+	{
+		perror("Failed to open file for writing");
+		dprintf(c->cmd_conn_fd, "451 %s\n", strerror(errno));
+		data_close(c, connfd);
+		return -1;
+	}
+
+	dprintf(c->cmd_conn_fd, "150 Sending file\n");
+
+	while((read_bytes = fread(buffer, 1, sizeof(buffer), fp)))
+	{
+		if(write(connfd, buffer, read_bytes) == -1)
+		{
+			perror("Failed to write to connfd");
+		}
+	}
+
+	if(ferror(fp))
+	{
+		fprintf(stderr, "Error reading file\n");
+	}
+
+	fclose(fp);
+
+	dprintf(c->cmd_conn_fd, "226 File send OK\n");
+
+	data_close(c, connfd);
+
+	return 0;
+}
+
 int cmd_ftp_quit(struct conn_info *c, const char *arg, size_t arg_len)
 {
 	(void)arg;

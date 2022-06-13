@@ -37,12 +37,13 @@ cmd_func_t *cmd_get_cmd(const char *msg, const char **arg, size_t msg_len);
 
 cmd_func_t cmd_ftp_user;
 cmd_func_t cmd_ftp_pass;
+cmd_func_t cmd_ftp_type;
+cmd_func_t cmd_ftp_stor;
+cmd_func_t cmd_ftp_retr;
 
 cmd_func_t cmd_ftp_syst;
 cmd_func_t cmd_ftp_pasv;
 cmd_func_t cmd_ftp_list;
-cmd_func_t cmd_ftp_type;
-cmd_func_t cmd_ftp_stor;
 cmd_func_t cmd_ftp_quit;
 
 static const struct cmd_entry commands[] =
@@ -57,4 +58,5 @@ static const struct cmd_entry commands[] =
 	{"STOR", cmd_ftp_stor},
 	{"PUT", cmd_ftp_stor}, /* Behaves the same as STOR */
 	{"QUIT", cmd_ftp_quit},
+	{"RETR", cmd_ftp_retr},
 };
