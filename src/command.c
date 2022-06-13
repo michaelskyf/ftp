@@ -271,6 +271,7 @@ int cmd_ftp_list(struct conn_info *c, const char *arg, size_t arg_len)
 
 	dprintf(c->cmd_conn_fd, "226 Directory send OK\n");
 
+	closedir(dp);
 	data_close(c, connfd);
 
 	return 0;
